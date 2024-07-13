@@ -300,34 +300,3 @@ df_conso_norm <- df_conso_norm %>%
 saveRDS(df_conso_norm, "df_conso_norm.RDS")
 ## Limpando memória
 rm(IPCA_2012_2021,df_consol_final,IPCA_2007_2021,pib_2007_2020,saldo_emprego_caged)
-
-###########################
-df_conso_n_test <- df_conso_norm 
-  # filter(ano_obito <= 2015)
-
-df_test <- df_conso_n_test %>% 
-  select(all_of(colunas_unicas),-na, -suic_rate_masc,-suic_rate_fema,
-         -tx_desemp_caged_femini,-tx_desemp_caged_mascu)
-
-df_test <- df_test %>%
-  mutate_at(vars(-uf, -estados, -deaths), as.double)
-df_ambos_test <- df_test %>%
-  rename(
-    tx_desem = tx_desemp_caged_ambos,
-    hope = esperanca_de_vida_ao_nascer,
-    ivs_infra = ivs_infraestrutura_urbana,
-    idhm_educ = idhm_educacao,
-    gini = indice_de_gini,
-    ano = ano_obito)
-
-data_describ_variable_teste <- df_ambos_test %>%
-  select(hope, gini, idhm_educ, ivs_infra, tx_desem, tx_div, pop_65) %>%
-  summarise_all(~list(Média = round(mean(., na.rm = TRUE), 2),
-                      Mediana = round(median(., na.rm = TRUE), 2),
-                      Mínimo = round(min(., na.rm = TRUE), 2),
-                      Máximo = round(max(., na.rm = TRUE), 2),
-                      DesvioPadrao = round(sd(., na.rm = TRUE), 2))) %>%
-  unnest(cols = everything())
-
-kable(data_describ_variable_teste, format = "latex", booktabs = TRUE,
-      caption = "Estatísticas Descritivas das Variáveis Selecionadas")
