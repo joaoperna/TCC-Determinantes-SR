@@ -89,60 +89,67 @@ saveRDS(final_dataset_death, "final_dataset_death.RDS")
 rm(df,state_mapping,result,new_dataset,pib2021,final_dataset_filtered,maindataset,pib_2012_2020,final_dataset,keeps,pib_total)
 
 #################################################################################
-## Baixando dados de desemprego referentes a 2012 a 2021
-## Fetching data
-desemp_2012_2021 <- get_sidra(
-  x = 4092,
-  geo = "State",
-  header = TRUE,
-  period = "201201-202104"
-) %>% 
-  janitor::clean_names()
+# Baixando dados de desemprego referentes a 2012 a 2021
+# Fetching data
+# desemp_2012_2021 <- get_sidra(
+#   x = 4092,
+#   geo = "State",
+#   header = TRUE,
+#   period = "201201-202104"
+# ) %>%
+#   janitor::clean_names()
 
 ## Processing data
 ## Agrupando dados trimestrais a níveis anuais e realizando as operações
 ## Baixando dados de desemprego referentes a 2012 a 2021
 ## Fetching data
-desemp_2012_2021 <- get_sidra(
-  x = 4092,
-  geo = "State",
-  header = TRUE,
-  period = "201201-202104"
-) %>% 
-  janitor::clean_names()
-
-## Processing data
-## Agrupando dados trimestrais a níveis anuais e realizando as operações
-desemp_2012_2021 <- desemp_2012_2021 %>%
-  filter(
-    condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao %in% c(
-      "Força de trabalho - desocupada",
-      "Força de trabalho"
-    ),
-    unidade_de_medida == "Mil pessoas"
-  ) %>%
-  select(unidade_da_federacao, trimestre_codigo, condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao, valor) %>%
-  pivot_wider(
-    names_from = condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao,
-    values_from = valor
-  ) %>%
-  mutate(
-    year = as.integer(substring(trimestre_codigo, 1, 4))
-  ) %>%
-  group_by(unidade_da_federacao, year) %>%
-  summarize(
-    taxa_des = sum(`Força de trabalho - desocupada`) / sum(`Força de trabalho`) * 100
-  ) %>%
-  ungroup()
+# desemp_2012_2021 <- get_sidra(
+#   x = 4092,
+#   geo = "State",
+#   header = TRUE,
+#   period = "201201-202104"
+# ) %>%
+#   janitor::clean_names()
+# 
+# # Processing data
+# # Agrupando dados trimestrais a níveis anuais e realizando as operações
+# desemp_2012_2021 <- desemp_2012_2021 %>%
+#  filter(
+#    condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao %in% c(
+#      "Força de trabalho - desocupada",
+#     "Força de trabalho"
+#   ),
+#   unidade_de_medida == "Mil pessoas"
+# ) %>%
+# select(unidade_da_federacao, trimestre_codigo, condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao, valor) %>%
+# pivot_wider(
+#   names_from = condicao_em_relacao_a_forca_de_trabalho_e_condicao_de_ocupacao,
+#   values_from = valor
+# ) %>%
+# mutate(
+#   year = as.integer(substring(trimestre_codigo, 1, 4))
+# ) %>%
+# group_by(unidade_da_federacao, year) %>%
+# summarize(
+#   taxa_des = sum(`Força de trabalho - desocupada`) / sum(`Força de trabalho`) * 100
+# ) %>%
+# ungroup()
 
 ## Read sheet and join datasets dos outros dados coletado
 dados_complentares <- read_excel("dados_complentares.xlsx")
 dados_complentares <- dados_complentares %>%
   select(-state)
 final_dataset_death_1 <- left_join(final_dataset_death, dados_complentares, by = c("UF" = "uf", "ano_obito" = "ano"))
-## Unindo dados da taxa de desemprego e filtrando para os anos de 2012 a 2021
-final_dataset_death_2 <- left_join(final_dataset_death_1, desemp_2012_2021, 
-                                    by = c("munResUf" = "unidade_da_federacao", "ano_obito" = "year"))
+# Unindo dados da taxa de desemprego e filtrando para os anos de 2012 a 2021
+# final_dataset_death_2 <- left_join(final_dataset_death_1, desemp_2012_2021, 
+                                     # by = c("munResUf" = "unidade_da_federacao", "ano_obito" = "year"))
+# arquivo do backup com a forma com os dados de tax_desemp do sidra, para agilizar o precesso
+abc <- readRDS("abc.RDS")
+abc1 <- abc %>% 
+  select(uf, ano_obito ,taxa_des)
+
+final_dataset_death_2 <- left_join(final_dataset_death_1, abc1,
+                                   by =c("UF" = "uf", "ano_obito"))
 df_consol <- final_dataset_death_2 %>%
   rename(estados = munResUf) %>%
   filter(ano_obito >= 2012, ano_obito <= 2021) %>%
@@ -186,11 +193,11 @@ df_conso_norm <- df_conso_norm %>%
 
 # Criando a proporção da população acima de 65 anos para os 3 níveis de agregação (masculino, feminino e ambos os sexos)
 df_conso_norm$populacao_de_65_anos_ou_mais <- as.numeric(as.character(df_conso_norm$populacao_de_65_anos_ou_mais))
-df_conso_norm$pop_65 = df_conso_norm$populacao_de_65_anos_ou_mais/df_conso_norm$pop_total*100
+df_conso_norm$pop_65 = df_conso_norm$populacao_de_65_anos_ou_mais/df_conso_norm$pop_total
 df_conso_norm$h_populacao_de_65_anos_ou_mais <- as.numeric(as.character(df_conso_norm$h_populacao_de_65_anos_ou_mais))
-df_conso_norm$h_pop_65 = df_conso_norm$h_populacao_de_65_anos_ou_mais/df_conso_norm$dh_pop_total*100
+df_conso_norm$h_pop_65 = df_conso_norm$h_populacao_de_65_anos_ou_mais/df_conso_norm$dh_pop_total
 df_conso_norm$f_populacao_de_65_anos_ou_mais <- as.numeric(as.character(df_conso_norm$f_populacao_de_65_anos_ou_mais))
-df_conso_norm$f_pop_65 = df_conso_norm$f_populacao_de_65_anos_ou_mais/df_conso_norm$dm_pop_total*100
+df_conso_norm$f_pop_65 = df_conso_norm$f_populacao_de_65_anos_ou_mais/df_conso_norm$dm_pop_total
 
 # Criando a taxa de divorcio para os 3 níveis de agregação (masculino, feminino e ambos os sexos)
 df_conso_norm$populacao_de_18_anos_ou_mais <- as.numeric(as.character(df_conso_norm$populacao_de_18_anos_ou_mais))
@@ -201,34 +208,76 @@ df_conso_norm$f_populacao_de_18_anos_ou_mais <- as.numeric(as.character(df_conso
 df_conso_norm$f_tx_div = (df_conso_norm$div/df_conso_norm$f_populacao_de_18_anos_ou_mais)*100000
 
 
-saldo_emprego_caged <- basedosdados::read_sql(query =("SELECT
-  sigla_uf,
-  ano,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_male,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_female,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) +
-  SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao
-FROM
-  `basedosdados.br_me_caged.microdados_antigos`
-WHERE ano BETWEEN 2012 AND 2019
-GROUP BY
-  sigla_uf,
-  ano
-UNION ALL
--- Segunda consulta para 2020-2021
+# saldo_emprego_caged <- basedosdados::read_sql(query =("SELECT
+#   sigla_uf,
+#   ano,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_male,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_female,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) +
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao
+# FROM
+#   `basedosdados.br_me_caged.microdados_antigos`
+# WHERE ano BETWEEN 2012 AND 2019
+# GROUP BY
+#   sigla_uf,
+#   ano
+# UNION ALL
+# -- Segunda consulta para 2020-2021
+# SELECT
+#   sigla_uf,
+#   ano,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_male,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 3 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_female,
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) +
+#   SUM(CASE WHEN CAST(sexo AS INT64) = 3 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao
+# FROM
+#   `basedosdados.br_me_caged.microdados_movimentacao`
+# WHERE ano IN (2020, 2021)
+# GROUP BY
+#   sigla_uf,
+#   ano
+# ORDER BY
+#   sigla_uf, ano"))
+
+saldo_emprego_caged <- basedosdados::read_sql(query =("WITH dados_agrupados AS (
+  SELECT
+    sigla_uf,
+    ano,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 1 AND saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_male_negative,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 2 AND saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_female_negative,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 1 AND saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_male_positive,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 2 AND saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_female_positive,
+    SUM(CASE WHEN saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_negative,
+    SUM(CASE WHEN saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_positive
+  FROM
+    `basedosdados.br_me_caged.microdados_antigos`
+  WHERE ano BETWEEN 2012 AND 2019
+  GROUP BY
+    sigla_uf, ano
+  UNION ALL
+  SELECT
+    sigla_uf,
+    ano,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 1 AND saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_male_negative,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 3 AND saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_female_negative,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 1 AND saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_male_positive,
+    SUM(CASE WHEN CAST(sexo AS INT64) = 3 AND saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_female_positive,
+    SUM(CASE WHEN saldo_movimentacao = -1 THEN 1 ELSE 0 END) AS total_negative,
+    SUM(CASE WHEN saldo_movimentacao = 1 THEN 1 ELSE 0 END) AS total_positive
+  FROM
+    `basedosdados.br_me_caged.microdados_movimentacao`
+  WHERE ano IN (2020, 2021)
+  GROUP BY
+    sigla_uf, ano
+)
 SELECT
   sigla_uf,
   ano,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_male,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao_female,
-  SUM(CASE WHEN CAST(sexo AS INT64) = 1 THEN saldo_movimentacao ELSE 0 END) +
-  SUM(CASE WHEN CAST(sexo AS INT64) = 2 THEN saldo_movimentacao ELSE 0 END) AS total_saldo_movimentacao
+  total_male_negative - total_male_positive AS saldo_male,
+  total_female_negative - total_female_positive AS saldo_female,
+  total_negative - total_positive AS saldo_total
 FROM
-  `basedosdados.br_me_caged.microdados_movimentacao`
-WHERE ano IN (2020, 2021)
-GROUP BY
-  sigla_uf,
-  ano
+  dados_agrupados
 ORDER BY
   sigla_uf, ano"))
 
@@ -242,12 +291,43 @@ df_conso_norm <- df_conso_norm %>%
     pea_18_anos_ou_mais = as.numeric(pea_18_anos_ou_mais),
     h_pea_18_anos_ou_mais = as.numeric(h_pea_18_anos_ou_mais),
     f_pea_18_anos_ou_mais = as.numeric(f_pea_18_anos_ou_mais),
-    tx_desemp_caged_ambos = (total_saldo_movimentacao         / pea_18_anos_ou_mais)*100,
-    tx_desemp_caged_mascu = (total_saldo_movimentacao_male    / h_pea_18_anos_ou_mais)*100,
-    tx_desemp_caged_femini = (total_saldo_movimentacao_female  / f_pea_18_anos_ou_mais)*100
+    tx_desemp_caged_ambos = (taxa_des/ pea_18_anos_ou_mais)*100000,
+    tx_desemp_caged_mascu = (taxa_des/h_pea_18_anos_ou_mais)*100000,
+    tx_desemp_caged_femini = (taxa_des/f_pea_18_anos_ou_mais)*100000
   )
 
 
 saveRDS(df_conso_norm, "df_conso_norm.RDS")
 ## Limpando memória
 rm(IPCA_2012_2021,df_consol_final,IPCA_2007_2021,pib_2007_2020,saldo_emprego_caged)
+
+###########################
+df_conso_n_test <- df_conso_norm 
+  # filter(ano_obito <= 2015)
+
+df_test <- df_conso_n_test %>% 
+  select(all_of(colunas_unicas),-na, -suic_rate_masc,-suic_rate_fema,
+         -tx_desemp_caged_femini,-tx_desemp_caged_mascu)
+
+df_test <- df_test %>%
+  mutate_at(vars(-uf, -estados, -deaths), as.double)
+df_ambos_test <- df_test %>%
+  rename(
+    tx_desem = tx_desemp_caged_ambos,
+    hope = esperanca_de_vida_ao_nascer,
+    ivs_infra = ivs_infraestrutura_urbana,
+    idhm_educ = idhm_educacao,
+    gini = indice_de_gini,
+    ano = ano_obito)
+
+data_describ_variable_teste <- df_ambos_test %>%
+  select(hope, gini, idhm_educ, ivs_infra, tx_desem, tx_div, pop_65) %>%
+  summarise_all(~list(Média = round(mean(., na.rm = TRUE), 2),
+                      Mediana = round(median(., na.rm = TRUE), 2),
+                      Mínimo = round(min(., na.rm = TRUE), 2),
+                      Máximo = round(max(., na.rm = TRUE), 2),
+                      DesvioPadrao = round(sd(., na.rm = TRUE), 2))) %>%
+  unnest(cols = everything())
+
+kable(data_describ_variable_teste, format = "latex", booktabs = TRUE,
+      caption = "Estatísticas Descritivas das Variáveis Selecionadas")
