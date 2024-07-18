@@ -1,4 +1,4 @@
-# Determinantes Econômicos e Socioeconômicos do Suicídio no Brasil: Uma Análise em Painel de 2012 a 2021 - UFT 2024
+# Determinantes Econômicos e Socioeconômicos do Suicídio nos Estados Brasileiros: Uma Análise em Painel de 2012 a 2021 - UFT 2024
 
 ## Sobre o Repositório
 
