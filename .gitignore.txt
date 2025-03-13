@@ -1,13 +1,13 @@
 ### R ###
 # History files
-.Rhistory
+/*.Rhistory
 .Rapp.history
 
 # Session Data files
 .RData
 .RDataTmp
-.RDS
-.RSD
+/*.RDS
+/*.RSD
 
 # User-specific files
 .Ruserdata
